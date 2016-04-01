@@ -1,0 +1,43 @@
+/**
+ * 调起客户端
+ * @param url {String}
+ * @param onSuccess {Function}
+ * @param onFail {Function}
+ */
+<!-- 浏览器接收到这个url请求发现未知协议，会交给系统处理，系统就能调起支付宝客户端了。我们还能趁机检查一下用户是否安装客户端：给iframe设置一个3-5秒的css3的transition过渡动画，然后监听动画完成事件，如果用户安装了客户端，那么系统会调起，并将浏览器转入后台运行，进入后台的浏览器一般不会再执行css动画，这样，我们就能通过判断css动画执行的时长是否超过预设来判断用户是否安装某个客户端了：
+ -->
+
+module.exports = function(url, onSuccess, onFail){
+    // 记录起始时间
+    var last = Date.now();
+
+    // 创建一个iframe
+    var ifr = document.createElement('IFRAME');
+    ifr.src = url;
+    // 飘出屏幕外
+    ifr.style.position = 'absolute';
+    ifr.style.left = '-1px';
+    ifr.style.top = '-1px';
+    ifr.style.width = '1px';
+    ifr.style.height = '1px';
+    // 设置一个4秒的动画用于检查客户端是否被调起
+    ifr.style.webkitTransition = 'all 4s';
+    document.body.appendChild(ifr);
+    setTimeout(function(){
+        // 监听动画完成时间
+        ifr.addEventListener('webkitTransitionEnd', function(){
+            document.body.removeChild(ifr);
+            if(Date.now() - last < 6){
+                // 如果动画执行时间在预设范围内，就认为没有调起客户端
+                if(typeof onFail === 'function'){
+                    onFail();
+                }
+            } else if(typeof onSuccess === 'function') {
+                // 动画执行超过预设范围，认为调起成功
+                onSuccess();
+            }
+        }, false);
+        // 启动动画
+        ifr.style.left = '-10px';
+    }, 0);
+};
